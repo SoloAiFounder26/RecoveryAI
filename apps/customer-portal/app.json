@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "RecoveryAI Pay",
+    "slug": "recoveryai-customer-portal",
+    "scheme": "recoveryai-pay",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#08080A",
+    "ios": {
+      "bundleIdentifier": "ai.recovery.pay",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Unlock RecoveryAI Pay with Face ID to keep your account statements private.",
+        "LSApplicationQueriesSchemes": [
+          "upi",
+          "phonepe",
+          "paytmmp",
+          "tez",
+          "gpay"
+        ]
+      }
+    },
+    "android": {
+      "package": "ai.recovery.pay",
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-font",
+      "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Unlock RecoveryAI Pay with Face ID to keep your account statements private."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Attach a receipt or challan photo to your billing query."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
