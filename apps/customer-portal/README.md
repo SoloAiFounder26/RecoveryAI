@@ -27,11 +27,14 @@ apps/customer-portal/
 ├── tailwind.config.js       # CRED palette: obsidian / surface / line / emerald / gold / crimson
 ├── global.css
 ├── supabase/migrations/
-│   └── 20261025170000_debtor_portal_rls.sql   # debtor RLS + portal RPCs (not applied yet)
+│   └── 20261025170000_debtor_portal_rls.sql   # debtor RLS + portal RPCs (live since 2026-10-26)
 └── src/
     ├── app/                 # Expo Router routes only
-    │   ├── _layout.tsx      # GestureHandler, SafeArea, BottomSheetModalProvider, PrivacyShield
+    │   ├── _layout.tsx      # providers + Stack.Protected route guards per auth state
+    │   ├── login.tsx        # phone OTP (SMS / WhatsApp), autofill, resend timer
+    │   ├── unlock.tsx       # biometric unlock + one-time "turn on Face ID?" offer
     │   └── index.tsx        # Customer Vault (home)
+    ├── auth/AuthProvider.tsx # session, OTP, biometric lock / re-lock after 60 s in background
     ├── components/
     │   ├── CustomerDashboard.tsx         # Vault: hero counter, badges, rails, ledger
     │   ├── SwipeToPaySlider.tsx          # swipe-to-pay, haptic lock, UPI intent
@@ -43,14 +46,15 @@ apps/customer-portal/
     │   ├── supabase.ts       # client, tokens in SecureStore, foreground-only refresh
     │   ├── secureStorage.ts  # chunked Keychain/Keystore adapter (sessions > 2 KB)
     │   ├── portalApi.ts      # RPC + RLS-backed queries
+    │   ├── biometric.ts      # expo-local-authentication wrapper + stored preference
+    │   ├── phone.ts          # Indian mobile parsing / +91 formatting
     │   └── format.ts         # ₹ Indian grouping, local-date helpers (no UTC drift)
     ├── data/mock.ts          # preview data when Supabase env is not set
     ├── theme/tokens.ts       # same palette for Reanimated / SVG / gradients
     └── types/portal.ts
 ```
 
-Planned next (not built yet): `(auth)/login.tsx` phone OTP, biometric unlock gate,
-invoice detail + PDF, dispute sheet with challan upload, activity log, profile / NOC.
+Planned next (not built yet): invoice detail + PDF, dispute sheet with challan upload, activity log, profile / NOC.
 
 ## Packages
 
@@ -75,6 +79,11 @@ npm install
 cp .env.example .env.local   # fill in Supabase URL + anon key (optional; mock data without it)
 npx expo start               # press i / a, or w for web preview
 ```
+
+Login needs Phone auth turned on in Supabase (Authentication → Sign In / Providers → Phone)
+with an SMS provider such as Twilio, MessageBird, Vonage or Textlocal. WhatsApp codes need
+Twilio. Sending SMS in India also needs a DLT-registered sender ID and template.
+Without env vars the app skips login and shows preview data.
 
 Haptics, screenshot blocking, SecureStore and the UPI hand-off need a real device
 (development build: `npx expo run:ios|android` or `eas build --profile development`).

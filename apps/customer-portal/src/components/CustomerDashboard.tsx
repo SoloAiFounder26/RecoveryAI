@@ -2,9 +2,10 @@ import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useMemo, useRef, useState, type ReactNode } from "react";
-import { Alert, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import { Alert, Platform, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import Animated, { FadeInDown, FadeInRight, LinearTransition } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "@/auth/AuthProvider";
 import { usePortalData } from "@/hooks/usePortalData";
 import { daysBetween, formatDayMonth, formatINR, formatINRCompact, parseISODate, startOfToday } from "@/lib/format";
 import { colors, metallicBorder } from "@/theme/tokens";
@@ -27,6 +28,7 @@ interface Props {
 export function CustomerDashboard({ onOpenInvoice }: Props) {
   const insets = useSafeAreaInsets();
   const data = usePortalData();
+  const auth = useAuth();
   const sheet = useRef<CommitmentDatePickerSheetRef>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [masked, setMasked] = useState(false);
@@ -43,6 +45,7 @@ export function CustomerDashboard({ onOpenInvoice }: Props) {
 
   const ledger = data.invoices.filter((i) => (filter === "pending" ? i.status !== "Paid" : i.status === "Paid"));
   const debtorName = data.accounts[0]?.customer_name ?? "";
+  const openCount = data.invoices.filter((i) => i.status !== "Paid").length;
 
   const onSwipe = (outcome: SwipeToPayOutcome) => {
     if (outcome === "upi_launched") return;
@@ -81,6 +84,22 @@ export function CustomerDashboard({ onOpenInvoice }: Props) {
             >
               <Text className="text-base text-mute">{masked ? "◉" : "◎"}</Text>
             </Pressable>
+            {!auth.isPreview && (
+              <Pressable
+                onPress={() => {
+                  if (Platform.OS === "web") return auth.signOut();
+                  Alert.alert("Sign out?", "You'll need a new code to sign in again.", [
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Sign out", style: "destructive", onPress: auth.signOut },
+                  ]);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Sign out"
+                className="h-9 w-9 items-center justify-center rounded-full border border-line bg-surface"
+              >
+                <Text className="text-base text-mute">⏻</Text>
+              </Pressable>
+            )}
           </View>
         </View>
 
@@ -99,7 +118,7 @@ export function CustomerDashboard({ onOpenInvoice }: Props) {
               <RollingRupeeCounter value={data.totalPending} masked={masked} />
             </View>
             <Text className="mt-1 font-mono text-xs text-faint">
-              across {data.accounts.length} {data.accounts.length === 1 ? "vendor" : "vendors"} · {data.invoices.filter((i) => i.status !== "Paid").length} open invoices
+              across {data.accounts.length} {data.accounts.length === 1 ? "vendor" : "vendors"} · {openCount} open {openCount === 1 ? "invoice" : "invoices"}
             </Text>
             <View className="mt-4 flex-row flex-wrap gap-2">
               {worstOverdue > 0 && <Pill tone="crimson" label={`${worstOverdue} days overdue`} pulse />}
