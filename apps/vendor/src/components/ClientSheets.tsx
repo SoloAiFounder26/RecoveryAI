@@ -96,24 +96,29 @@ interface OutcomeProps {
   onSubmit: (input: OutcomeInput) => Promise<void>;
   /** Voice note → structured outcome (POST /api/voice-action). Hidden when absent. */
   onTranscribe?: (uri: string, mimeType: string) => Promise<VoiceActionResult>;
+  /** Demo login: the voice result is canned sample text, so say so. */
+  isSample?: boolean;
 }
 
 /** Log what came out of a call (or a payment that arrived) against the debtor's record. */
-export const LogOutcomeSheet = forwardRef<BottomSheetModal, OutcomeProps>(function LogOutcomeSheet({ name, outstanding, onSubmit, onTranscribe }, ref) {
+export const LogOutcomeSheet = forwardRef<BottomSheetModal, OutcomeProps>(function LogOutcomeSheet({ name, outstanding, onSubmit, onTranscribe, isSample }, ref) {
   const [type, setType] = useState<InteractionType>("Promise to Pay");
   const [amount, setAmount] = useState("");
   const [inDays, setInDays] = useState(7);
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [transcript, setTranscript] = useState<string | null>(null);
+  const [summary, setSummary] = useState<string | null>(null);
 
+  // What was said goes into Notes (it becomes the call transcript on the client page); the AI's
+  // one-line reading is shown above so the vendor can check the outcome, amount and date it picked.
   const applyVoice = (r: VoiceActionResult) => {
-    setTranscript(r.transcript);
+    setSummary(r.notes || null);
     setType(r.interaction_type);
     if (r.promised_amount) setAmount(String(r.promised_amount));
     if (r.promised_date) setInDays(Math.min(Math.max(daysBetween(startOfToday(), parseISODate(r.promised_date)), 0), 90));
-    if (r.notes) setNotes(r.notes);
+    const said = (r.transcript || r.notes).trim();
+    if (said) setNotes((cur) => (cur.trim() ? `${cur.trim()}\n${said}` : said).slice(0, 2000));
   };
   const datePresets = PROMISE_PRESETS.includes(inDays) ? PROMISE_PRESETS : [...PROMISE_PRESETS, inDays].sort((a, b) => a - b);
 
@@ -139,7 +144,7 @@ export const LogOutcomeSheet = forwardRef<BottomSheetModal, OutcomeProps>(functi
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setNotes("");
       setAmount("");
-      setTranscript(null);
+      setSummary(null);
       if (ref && typeof ref !== "function") ref.current?.dismiss();
     } catch (e) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -154,8 +159,11 @@ export const LogOutcomeSheet = forwardRef<BottomSheetModal, OutcomeProps>(functi
       {onTranscribe && (
         <View className="mb-4">
           <VoiceNoteButton onTranscribe={onTranscribe} onResult={applyVoice} />
-          {transcript ? (
-            <Text className="mt-2 text-[12px] italic leading-4 text-mute">“{transcript}”</Text>
+          {summary ? (
+            <Text className="mt-2 text-[12px] leading-4 text-emerald">
+              AI: {summary}
+              {isSample ? <Text className="text-gold"> · sample result, demo login has no AI</Text> : null}
+            </Text>
           ) : null}
         </View>
       )}

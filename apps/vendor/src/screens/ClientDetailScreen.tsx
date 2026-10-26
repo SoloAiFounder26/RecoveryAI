@@ -34,7 +34,7 @@ export function ClientDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { snapshot, error, loading, refresh, refreshing, requestCall, pauseAi, logInteraction, transcribe } = useVendorData();
+  const { snapshot, error, loading, refresh, refreshing, requestCall, pauseAi, logInteraction, transcribe, isSample } = useVendorData();
   const pauseRef = useRef<BottomSheetModal>(null);
   const outcomeRef = useRef<BottomSheetModal>(null);
   const [showPaid, setShowPaid] = useState(false);
@@ -230,6 +230,7 @@ export function ClientDetailScreen() {
         outstanding={Number(customer.total_outstanding)}
         onSubmit={(input) => logInteraction({ customerId: customer.id, ...input })}
         onTranscribe={transcribe}
+        isSample={isSample}
       />
     </View>
   );

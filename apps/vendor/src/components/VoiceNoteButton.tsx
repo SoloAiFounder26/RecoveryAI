@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from "react-native-reanimated";
 import Svg, { Path } from "react-native-svg";
+import { expectSystemUi, systemUiDone } from "@/components/BiometricShield";
 import type { VoiceActionResult } from "@/lib/webApi";
 import { colors } from "@/theme/tokens";
 
@@ -41,17 +42,26 @@ export function VoiceNoteButton({
   }, [phase, pulse]);
 
   const start = async () => {
+    if (phase !== "idle") return;
     setError(null);
-    const perm = await requestRecordingPermissionsAsync();
-    if (!perm.granted) {
-      setError("Allow microphone access in Settings to record a voice note.");
-      return;
+    Haptics.selectionAsync();
+    try {
+      // The permission dialog is its own Android activity; don't let the vault relock behind it.
+      expectSystemUi();
+      const perm = await requestRecordingPermissionsAsync().finally(systemUiDone);
+      if (!perm.granted) {
+        setError("Allow microphone access in Settings to record a voice note.");
+        return;
+      }
+      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+      await recorder.prepareToRecordAsync();
+      recorder.record({ forDuration: MAX_SECONDS });
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setPhase("recording");
+    } catch (e) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setError(`Couldn't start recording. ${e instanceof Error ? e.message : ""}`.trim());
     }
-    await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
-    await recorder.prepareToRecordAsync();
-    recorder.record({ forDuration: MAX_SECONDS });
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setPhase("recording");
   };
 
   const stop = async () => {
@@ -61,6 +71,7 @@ export function VoiceNoteButton({
       await recorder.stop();
       await setAudioModeAsync({ allowsRecording: false });
       if (!recorder.uri) throw new Error("Recording failed. Try again.");
+      if (seconds < 1) throw new Error("That was too short. Hold on for a couple of seconds while you speak.");
       const result = await onTranscribe(recorder.uri, MIME);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onResult(result);

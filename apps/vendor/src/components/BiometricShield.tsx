@@ -34,6 +34,21 @@ interface Props {
 
 const SCREEN_CAPTURE_KEY = "recoveryai-vendor";
 
+// Android shows the mic-permission dialog and the file picker as separate activities, so the app
+// reports "background" while they are open. Without this, returning from them relocks the vault
+// mid-task (and the voice note or import the vendor started is lost behind the lock screen).
+let systemUiUntil = 0;
+
+/** Call right before opening an in-app system dialog (permission prompt, file picker). */
+export function expectSystemUi(ms = 60_000) {
+  systemUiUntil = Date.now() + ms;
+}
+
+/** Call once that dialog has closed. */
+export function systemUiDone() {
+  systemUiUntil = 0;
+}
+
 /**
  * Wraps the signed-in app and:
  *  1. demands Face ID / fingerprint (device passcode as fallback) on cold start and every time
@@ -56,6 +71,7 @@ export function BiometricShield({ children, enabled, relockAfterMs = 0, title = 
 
   const authenticating = useRef(false);
   const backgroundedAt = useRef<number | null>(null);
+  const leftForOwnDialog = useRef(false);
   const appState = useRef<AppStateStatus>(AppState.currentState);
   const blurTarget = useRef<View>(null);
 
@@ -127,14 +143,20 @@ export function BiometricShield({ children, enabled, relockAfterMs = 0, title = 
 
       if (next === "inactive" || next === "background") {
         setObscured(true);
-        if (next === "background") backgroundedAt.current = Date.now();
+        if (next === "background") {
+          backgroundedAt.current = Date.now();
+          // Decided now, while the dialog is up; the opener clears the flag when it closes.
+          leftForOwnDialog.current = Date.now() <= systemUiUntil;
+        }
         return;
       }
 
       if (next === "active") {
         const leftAt = backgroundedAt.current;
         backgroundedAt.current = null;
-        if (leftAt !== null && Date.now() - leftAt >= relockAfterMs) {
+        const ownDialog = leftForOwnDialog.current;
+        leftForOwnDialog.current = false;
+        if (leftAt !== null && !ownDialog && Date.now() - leftAt >= relockAfterMs) {
           lock();
         } else if (prev !== "active") {
           // Only a glance at the switcher / notification shade: drop the blur, unless still locked.

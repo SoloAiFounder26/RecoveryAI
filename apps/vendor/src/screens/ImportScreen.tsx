@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Platform, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BackHeader } from "@/components/BackHeader";
+import { expectSystemUi, systemUiDone } from "@/components/BiometricShield";
 import { Notice } from "@/components/Form";
 import { GlassCard } from "@/components/GlassCard";
 import { DataGate, GhostButton, PrimaryButton, SectionTitle } from "@/components/ui";
@@ -46,7 +47,9 @@ export function ImportScreen() {
   const pick = async () => {
     setError(null);
     setDone(null);
-    const res = await DocumentPicker.getDocumentAsync({ type: TYPES, copyToCacheDirectory: true });
+    // The picker is a separate Android activity; keep the vault from relocking behind it.
+    expectSystemUi(5 * 60_000);
+    const res = await DocumentPicker.getDocumentAsync({ type: TYPES, copyToCacheDirectory: true }).finally(systemUiDone);
     if (res.canceled || !res.assets[0]) return;
     const asset = res.assets[0];
     try {
