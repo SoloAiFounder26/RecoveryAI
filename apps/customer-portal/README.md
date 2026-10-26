@@ -89,6 +89,18 @@ Haptics, screenshot blocking, SecureStore and the UPI hand-off need a real devic
 (development build: `npx expo run:ios|android` or `eas build --profile development`).
 Web is only for a quick visual check.
 
+## Test APK
+
+```bash
+cd apps/customer-portal
+npm install
+npx eas-cli@latest login          # free Expo account
+npm run build:apk                 # cloud build, ~15 min, prints a download link for the .apk
+```
+
+The `preview` profile in `eas.json` builds an installable APK already pointed at the
+`recovery-ai` Supabase project (the publishable key is safe to ship; RLS protects the data).
+
 ## Security model (summary)
 
 * Debtor identity = OTP-verified Indian mobile on `auth.users`. Unverified phones and
