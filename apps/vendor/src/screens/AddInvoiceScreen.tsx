@@ -1,9 +1,10 @@
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View, type TextInputProps } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BackHeader } from "@/components/BackHeader";
+import { Field, Label } from "@/components/Form";
 import { Chip, DataGate, PrimaryButton } from "@/components/ui";
 import { useVendorData } from "@/data/VendorDataProvider";
 import { addDays, formatWeekdayDayMonth, startOfToday, toISODate } from "@/lib/format";
@@ -159,26 +160,5 @@ export function AddInvoiceScreen() {
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>
-  );
-}
-
-function Label({ children }: { children: string }) {
-  return <Text className="mb-2 mt-5 font-mono text-[10px] uppercase tracking-label text-mute">{children}</Text>;
-}
-
-function Field({ label, prefix, big, editable = true, ...input }: TextInputProps & { label: string; prefix?: string; big?: boolean }) {
-  return (
-    <View>
-      <Label>{label}</Label>
-      <View className="h-14 flex-row items-center rounded-2xl border border-line bg-surface px-4" style={{ opacity: editable ? 1 : 0.6 }}>
-        {prefix ? <Text className="mr-2 text-[16px] font-bold text-mute">{prefix}</Text> : null}
-        <TextInput
-          {...input}
-          editable={editable}
-          placeholderTextColor={colors.faint}
-          style={{ flex: 1, color: colors.ink, fontSize: big ? 22 : 16, fontWeight: big ? "800" : "600" }}
-        />
-      </View>
-    </View>
   );
 }

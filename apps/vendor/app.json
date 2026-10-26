@@ -40,8 +40,8 @@
       [
         "expo-audio",
         {
-          "microphonePermission": false,
-          "recordAudioAndroid": false,
+          "microphonePermission": "RecoveryAI Business records a short voice note after a debtor call so AI can fill in the outcome.",
+          "recordAudioAndroid": true,
           "enableBackgroundPlayback": false
         }
       ]

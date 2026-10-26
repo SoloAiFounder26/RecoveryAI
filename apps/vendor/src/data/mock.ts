@@ -7,12 +7,12 @@ const today = startOfToday();
 const d = (offset: number) => toISODate(addDays(today, offset));
 
 const customers: CustomerRow[] = [
-  { id: "c1", name: "Shree Balaji Traders", phone: "9812345678", category: "Wholesale", total_outstanding: 486500, overdue_days: 112, risk_level: "High", ai_risk_score: 91, ai_insight: "Two broken promises. Responds to calls after 6 pm.", broken_promises_count: 2, active_promise_date: null },
-  { id: "c2", name: "Patel Hardware & Sons", phone: "9876501234", category: "Retail", total_outstanding: 212000, overdue_days: 74, risk_level: "High", ai_risk_score: 78, ai_insight: "Promised to pay today on the last call.", broken_promises_count: 1, active_promise_date: d(0) },
-  { id: "c3", name: "Krishna Electricals", phone: "9988776655", category: "Retail", total_outstanding: 158400, overdue_days: 41, risk_level: "Medium", ai_risk_score: 55, ai_insight: "Paid part last month; usually clears within 2 weeks of a reminder.", broken_promises_count: 0, active_promise_date: d(6) },
-  { id: "c4", name: "Gupta Distributors", phone: "9123456780", category: "Distributor", total_outstanding: 342750, overdue_days: 96, risk_level: "High", ai_risk_score: 84, ai_insight: "Disputed one invoice; send the signed challan.", broken_promises_count: 3, active_promise_date: d(-3) },
-  { id: "c5", name: "Om Sai Kirana", phone: "9090909090", category: "Retail", total_outstanding: 38900, overdue_days: 12, risk_level: "Low", ai_risk_score: 18, ai_insight: null, broken_promises_count: 0, active_promise_date: null },
-  { id: "c6", name: "Mehta Industrial Supply", phone: "9822001144", category: "Industrial", total_outstanding: 126450, overdue_days: 0, risk_level: "Low", ai_risk_score: 22, ai_insight: null, broken_promises_count: 0, active_promise_date: null },
+  { id: "c1", name: "Shree Balaji Traders", phone: "9812345678", email: "accounts@shreebalaji.in", category: "Wholesale", total_outstanding: 486500, overdue_days: 112, risk_level: "High", ai_risk_score: 91, ai_insight: "Two broken promises. Responds to calls after 6 pm.", broken_promises_count: 2, active_promise_date: null },
+  { id: "c2", name: "Patel Hardware & Sons", phone: "9876501234", email: null, category: "Retail", total_outstanding: 212000, overdue_days: 74, risk_level: "High", ai_risk_score: 78, ai_insight: "Promised to pay today on the last call.", broken_promises_count: 1, active_promise_date: d(0) },
+  { id: "c3", name: "Krishna Electricals", phone: "9988776655", email: null, category: "Retail", total_outstanding: 158400, overdue_days: 41, risk_level: "Medium", ai_risk_score: 55, ai_insight: "Paid part last month; usually clears within 2 weeks of a reminder.", broken_promises_count: 0, active_promise_date: d(6) },
+  { id: "c4", name: "Gupta Distributors", phone: "9123456780", email: null, category: "Distributor", total_outstanding: 342750, overdue_days: 96, risk_level: "High", ai_risk_score: 84, ai_insight: "Disputed one invoice; send the signed challan.", broken_promises_count: 3, active_promise_date: d(-3) },
+  { id: "c5", name: "Om Sai Kirana", phone: "9090909090", email: null, category: "Retail", total_outstanding: 38900, overdue_days: 12, risk_level: "Low", ai_risk_score: 18, ai_insight: null, broken_promises_count: 0, active_promise_date: null },
+  { id: "c6", name: "Mehta Industrial Supply", phone: "9822001144", email: null, category: "Industrial", total_outstanding: 126450, overdue_days: 0, risk_level: "Low", ai_risk_score: 22, ai_insight: null, broken_promises_count: 0, active_promise_date: null },
 ];
 
 const inv = (id: string, customer_id: string, invoice_no: string, amount: number, due: number, raised: number, status: InvoiceRow["status"] = "Pending"): InvoiceRow => ({
@@ -117,10 +117,13 @@ export const mockSnapshot: DashboardSnapshot = {
     id: "t-demo",
     business_name: "Ganesh & Kartike Electronics",
     owner_phone: "9810012345",
-    plan: "pro",
+    auth_user_id: "demo-owner",
+    plan: "growth",
     upi_id: "gke@okicici",
+    bank_details: "HDFC Bank · A/c 50200012345678 · IFSC HDFC0001234",
     udyam_number: "UDYAM-DL-06-0012345",
     udyam_category: "small",
+    udyam_registered_on: "2023-04-12",
     is_suspended: false,
     created_at: at(200),
   },

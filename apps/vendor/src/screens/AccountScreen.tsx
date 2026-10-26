@@ -12,21 +12,40 @@ import { useVendorData } from "@/data/VendorDataProvider";
 import { biometricLabel, getBiometricKind, type BiometricKind } from "@/lib/biometric";
 import { formatDayMonth, groupINR } from "@/lib/format";
 import { colors } from "@/theme/tokens";
-import { PLAN_INVOICE_LIMIT, PLAN_LABEL, PLAN_PRICE, type Plan } from "@/types/vendor";
+import { PLANS } from "@/lib/plans";
+import { PLAN_INVOICE_LIMIT, PLAN_PRICE, type Plan } from "@/types/vendor";
 
-// Only what the backend enforces (fn_plan_invoice_limit). Feature gates beyond that live on the web app.
-const PLAN_PERKS: Record<Plan, string[]> = {
-  free: ["3 new invoices / month"],
-  pro: ["15 new invoices / month"],
-  growth: ["Unlimited invoices"],
-};
+// What each tier unlocks, from the same plan table the web app enforces (lib/plans.ts).
+function perksOf(p: Plan): string[] {
+  const spec = PLANS[p];
+  return [
+    spec.invoicesPerMonth === null ? "Unlimited invoices" : `${spec.invoicesPerMonth} invoices / month`,
+    spec.reminderCadence && "Day 1 / 16 / 31 reminder queue",
+    spec.upiLinks && "UPI links in reminders",
+    spec.allEmailTones && "All email tones",
+    spec.bulkImport && "CSV / Excel bulk import",
+    spec.statutoryNotices && "MSMED statutory notices",
+    spec.agingDashboard && "Aging + interest dashboard",
+    spec.seats > 1 && `${spec.seats} team seats`,
+    spec.prioritySupport && "Priority support",
+  ].filter((x): x is string => Boolean(x));
+}
+
+const MANAGE: { label: string; sub: string; href: "/profile" | "/team" | "/analytics" | "/import" | "/help" | "/activity" }[] = [
+  { label: "Business profile", sub: "UPI ID, bank details, Udyam registration", href: "/profile" },
+  { label: "Team", sub: "Invite your accountant or CA", href: "/team" },
+  { label: "Analytics", sub: "Recovery trend, aging, MSMED interest", href: "/analytics" },
+  { label: "Bulk import", sub: "Tally, Zoho Books or Excel export", href: "/import" },
+  { label: "Activity log", sub: "Every reminder, call outcome and invoice", href: "/activity" },
+  { label: "Help & support", sub: "Ask us anything, see replies", href: "/help" },
+];
 
 /** Admin: plan + live quotas, organisation, team, activity log and security status. */
 export function AccountScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { session, signOut } = useAuth();
-  const { snapshot, metrics, error, loading, refresh } = useVendorData();
+  const { snapshot, metrics, error, loading, refresh, role } = useVendorData();
   const [kind, setKind] = useState<BiometricKind | null>(null);
 
   useEffect(() => {
@@ -49,7 +68,7 @@ export function AccountScreen() {
           <View className="flex-row items-start justify-between">
             <View>
               <Text className="font-mono text-[10px] uppercase tracking-label text-mute">Current plan</Text>
-              <Text className="mt-1 text-[28px] font-extrabold text-ink">{PLAN_LABEL[tenant.plan]}</Text>
+              <Text className="mt-1 text-[26px] font-extrabold text-ink">{PLANS[tenant.plan].name}</Text>
             </View>
             <View className="items-end">
               <Text className="text-[22px] font-extrabold text-emerald">₹{groupINR(PLAN_PRICE[tenant.plan])}</Text>
@@ -61,7 +80,7 @@ export function AccountScreen() {
             label="Invoices this month"
             used={used}
             limit={limit}
-            caption={limit === null ? "Unlimited on Growth" : `${Math.max(limit - used, 0)} left · resets 1st`}
+            caption={limit === null ? "Unlimited on MSME Growth" : `${Math.max(limit - used, 0)} left · resets 1st`}
           />
           <QuotaGauge label="WhatsApp reminders sent" used={metrics.whatsappRemindersThisMonth} limit={null} caption="This month · included in plan" />
           <QuotaGauge label="AI call outcomes logged" used={metrics.callOutcomesThisMonth} limit={null} caption="Call minutes aren't metered by the backend yet" />
@@ -73,15 +92,15 @@ export function AccountScreen() {
             return (
               <View
                 key={p}
-                className="w-[150px] rounded-3xl border p-4"
+                className="w-[170px] rounded-3xl border p-4"
                 style={{ borderColor: current ? colors.emerald : colors.line, backgroundColor: current ? "rgba(0,229,153,0.06)" : colors.surface }}
               >
                 <View className="flex-row items-center justify-between">
-                  <Text className="text-[15px] font-extrabold text-ink">{PLAN_LABEL[p]}</Text>
+                  <Text className="text-[15px] font-extrabold text-ink">{PLANS[p].name}</Text>
                   {current && <Pill label="You" tone={colors.emerald} />}
                 </View>
                 <Text className="mt-1 text-[18px] font-extrabold text-ink">₹{groupINR(PLAN_PRICE[p])}</Text>
-                {PLAN_PERKS[p].map((perk) => (
+                {perksOf(p).map((perk) => (
                   <Text key={perk} className="mt-1.5 text-[11px] leading-4 text-mute">
                     · {perk}
                   </Text>
@@ -100,14 +119,27 @@ export function AccountScreen() {
           <Row label="Business" value={tenant.business_name} />
           <Row label="Owner mobile" value={`+91 ${tenant.owner_phone}`} />
           <Row label="UPI ID" value={tenant.upi_id ?? "Not set"} />
+          <Row label="Bank (NEFT)" value={tenant.bank_details ?? "Not set"} />
           <Row label="Udyam" value={tenant.udyam_number ? `${tenant.udyam_number}${tenant.udyam_category ? ` · ${tenant.udyam_category}` : ""}` : "Not registered"} />
           <Row label="Member since" value={formatDayMonth(new Date(tenant.created_at))} />
           <Row label="Switch business" value="Only one business on this login" muted last />
         </View>
+        <Pressable onPress={() => router.push("/profile")} className="mt-2 self-end px-1 py-1">
+          <Text className="text-[13px] font-bold text-gold">{role === "owner" ? "Edit profile ›" : "View profile ›"}</Text>
+        </Pressable>
 
         {/* Team */}
         <View className="mb-3 mt-8">
-          <SectionTitle title="Team" sub={`${snapshot.members.length + 1} people`} />
+          <SectionTitle
+            title="Team"
+            right={
+              <Pressable onPress={() => router.push("/team")}>
+                <Text className="font-mono text-[10px] uppercase tracking-label text-gold">
+                  {snapshot.members.length + 1} / {PLANS[tenant.plan].seats} seats · manage ›
+                </Text>
+              </Pressable>
+            }
+          />
         </View>
         <View className="overflow-hidden rounded-3xl border border-line bg-surface">
           <MemberRow email={session?.user.email ?? "You"} role="Owner" tone={colors.emerald} last={snapshot.members.length === 0} />
@@ -122,14 +154,25 @@ export function AccountScreen() {
           ))}
         </View>
 
-        {/* Audit */}
-        <Pressable onPress={() => router.push("/activity")} className="mt-8 flex-row items-center justify-between rounded-3xl border border-line bg-surface p-4 active:opacity-90">
-          <View>
-            <Text className="text-[15px] font-bold text-ink">Activity log</Text>
-            <Text className="mt-0.5 text-[12px] text-mute">Every reminder, call outcome and invoice, timestamped</Text>
-          </View>
-          <Text className="text-[18px] text-mute">›</Text>
-        </Pressable>
+        {/* Everything else the web app's More menu has */}
+        <View className="mb-3 mt-8">
+          <SectionTitle title="Manage" />
+        </View>
+        <View className="overflow-hidden rounded-3xl border border-line bg-surface">
+          {MANAGE.map((m, i) => (
+            <Pressable
+              key={m.href}
+              onPress={() => router.push(m.href)}
+              className={`flex-row items-center justify-between px-4 py-3.5 active:bg-raised ${i === MANAGE.length - 1 ? "" : "border-b border-line"}`}
+            >
+              <View className="flex-1 pr-3">
+                <Text className="text-[14px] font-bold text-ink">{m.label}</Text>
+                <Text className="mt-0.5 text-[12px] text-mute">{m.sub}</Text>
+              </View>
+              <Text className="text-[18px] text-mute">›</Text>
+            </Pressable>
+          ))}
+        </View>
 
         {/* Security */}
         <View className="mb-3 mt-8">

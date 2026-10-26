@@ -4,7 +4,9 @@ import { forwardRef, useEffect, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { Sheet } from "@/components/Sheet";
 import { Chip, PrimaryButton } from "@/components/ui";
-import { addDays, formatWeekdayDayMonth, parseISODate, startOfToday, toISODate } from "@/lib/format";
+import { VoiceNoteButton } from "@/components/VoiceNoteButton";
+import type { VoiceActionResult } from "@/lib/webApi";
+import { addDays, daysBetween, formatWeekdayDayMonth, parseISODate, startOfToday, toISODate } from "@/lib/format";
 import { colors } from "@/theme/tokens";
 import type { InteractionType } from "@/types/vendor";
 
@@ -92,16 +94,28 @@ interface OutcomeProps {
   name: string;
   outstanding: number;
   onSubmit: (input: OutcomeInput) => Promise<void>;
+  /** Voice note → structured outcome (POST /api/voice-action). Hidden when absent. */
+  onTranscribe?: (uri: string, mimeType: string) => Promise<VoiceActionResult>;
 }
 
 /** Log what came out of a call (or a payment that arrived) against the debtor's record. */
-export const LogOutcomeSheet = forwardRef<BottomSheetModal, OutcomeProps>(function LogOutcomeSheet({ name, outstanding, onSubmit }, ref) {
+export const LogOutcomeSheet = forwardRef<BottomSheetModal, OutcomeProps>(function LogOutcomeSheet({ name, outstanding, onSubmit, onTranscribe }, ref) {
   const [type, setType] = useState<InteractionType>("Promise to Pay");
   const [amount, setAmount] = useState("");
   const [inDays, setInDays] = useState(7);
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [transcript, setTranscript] = useState<string | null>(null);
+
+  const applyVoice = (r: VoiceActionResult) => {
+    setTranscript(r.transcript);
+    setType(r.interaction_type);
+    if (r.promised_amount) setAmount(String(r.promised_amount));
+    if (r.promised_date) setInDays(Math.min(Math.max(daysBetween(startOfToday(), parseISODate(r.promised_date)), 0), 90));
+    if (r.notes) setNotes(r.notes);
+  };
+  const datePresets = PROMISE_PRESETS.includes(inDays) ? PROMISE_PRESETS : [...PROMISE_PRESETS, inDays].sort((a, b) => a - b);
 
   const needsAmount = type === "Promise to Pay" || type === "Partial Payment" || type === "Paid";
   const needsDate = type === "Promise to Pay";
@@ -109,7 +123,7 @@ export const LogOutcomeSheet = forwardRef<BottomSheetModal, OutcomeProps>(functi
   const amountOk = !needsAmount || (parsed > 0 && (type !== "Partial Payment" || parsed < outstanding));
 
   useEffect(() => {
-    if (type === "Paid") setAmount(String(Math.round(outstanding)));
+    if (type === "Paid") setAmount((a) => a || String(Math.round(outstanding)));
   }, [type, outstanding]);
 
   const submit = async () => {
@@ -125,6 +139,7 @@ export const LogOutcomeSheet = forwardRef<BottomSheetModal, OutcomeProps>(functi
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setNotes("");
       setAmount("");
+      setTranscript(null);
       if (ref && typeof ref !== "function") ref.current?.dismiss();
     } catch (e) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -136,6 +151,14 @@ export const LogOutcomeSheet = forwardRef<BottomSheetModal, OutcomeProps>(functi
 
   return (
     <Sheet ref={ref} title="Log call outcome" subtitle={`What did ${name} say?`}>
+      {onTranscribe && (
+        <View className="mb-4">
+          <VoiceNoteButton onTranscribe={onTranscribe} onResult={applyVoice} />
+          {transcript ? (
+            <Text className="mt-2 text-[12px] italic leading-4 text-mute">“{transcript}”</Text>
+          ) : null}
+        </View>
+      )}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
         {TYPES.map((t) => (
           <Chip key={t.type} label={t.type} tone={t.tone} active={type === t.type} onPress={() => setType(t.type)} />
@@ -172,7 +195,7 @@ export const LogOutcomeSheet = forwardRef<BottomSheetModal, OutcomeProps>(functi
         <>
           <Text className="mt-4 font-mono text-[10px] uppercase tracking-label text-mute">Will pay on</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-2" contentContainerStyle={{ gap: 8 }}>
-            {PROMISE_PRESETS.map((d) => (
+            {datePresets.map((d) => (
               <Chip key={d} label={d === 0 ? "Today" : formatWeekdayDayMonth(addDays(startOfToday(), d))} active={inDays === d} onPress={() => setInDays(d)} tone={colors.gold} />
             ))}
           </ScrollView>

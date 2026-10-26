@@ -5,6 +5,7 @@ import { Pressable, RefreshControl, ScrollView, SectionList, Text, View } from "
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlassCard } from "@/components/GlassCard";
+import { ReminderQueue } from "@/components/ReminderQueue";
 import { TAB_BAR_CLEARANCE } from "@/components/TabBar";
 import { Chip, DataGate, EmptyState, Pill, ScreenTitle, SectionTitle } from "@/components/ui";
 import { useVendorData } from "@/data/VendorDataProvider";
@@ -29,7 +30,7 @@ const SENTIMENT_TONE = { positive: colors.emerald, neutral: colors.mute, negativ
 export function DispatchHubScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { snapshot, error, loading, refresh, refreshing, isSample } = useVendorData();
+  const { snapshot, error, loading, refresh, refreshing, isSample, plan } = useVendorData();
   const [filter, setFilter] = useState<Filter>("all");
 
   const feed = useMemo(() => {
@@ -103,6 +104,10 @@ export function DispatchHubScreen() {
         <Counter label="Calls today" value={`${feed.today.calls}`} tone={colors.ink} />
         <Counter label="Reminders today" value={`${feed.today.reminders}`} tone={colors.emerald} />
         <Counter label="Promised today" value={formatINRCompact(feed.today.promised)} tone={colors.gold} />
+      </View>
+
+      <View className="mt-7">
+        <ReminderQueue snapshot={snapshot} plan={plan} />
       </View>
 
       {snapshot.recoveryPlan.length > 0 && (

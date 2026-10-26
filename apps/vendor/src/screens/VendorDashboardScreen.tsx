@@ -126,6 +126,11 @@ export function VendorDashboardScreen() {
             <Kpi label="WhatsApp reminders sent · month" value={`${metrics.whatsappRemindersThisMonth}`} tone={colors.emerald} wide />
           </Pressable>
         </Animated.View>
+        <Animated.View entering={FadeInDown.delay(260).duration(500)} style={{ marginTop: 12, flexDirection: "row", gap: 8 }}>
+          <GhostButton label="Analytics" tone={colors.emerald} onPress={() => router.push("/analytics")} />
+          <GhostButton label="Bulk import" tone={colors.gold} onPress={() => router.push("/import")} />
+          <GhostButton label="Add invoice" onPress={() => router.push("/add-invoice")} />
+        </Animated.View>
 
         {/* Story carousel: AI's call-first queue */}
         {snapshot.recoveryPlan.length > 0 && (

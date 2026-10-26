@@ -34,7 +34,7 @@ export function ClientDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { snapshot, error, loading, refresh, refreshing, requestCall, pauseAi, logInteraction } = useVendorData();
+  const { snapshot, error, loading, refresh, refreshing, requestCall, pauseAi, logInteraction, transcribe } = useVendorData();
   const pauseRef = useRef<BottomSheetModal>(null);
   const outcomeRef = useRef<BottomSheetModal>(null);
   const [showPaid, setShowPaid] = useState(false);
@@ -164,14 +164,10 @@ export function ClientDetailScreen() {
         {/* Actions */}
         <View className="mt-4 flex-row gap-2">
           <GhostButton
-            label="WhatsApp"
-            onPress={() => {
-              const due = data.oldestOpen;
-              const text = due
-                ? `Namaste ${customer.name}, a gentle reminder that ${formatINR(Number(customer.total_outstanding))} is pending (oldest invoice ${due.invoice_no}, due ${formatDayMonth(due.due_date)}). Please share a payment date.`
-                : `Namaste ${customer.name},`;
-              Linking.openURL(`https://wa.me/91${customer.phone}?text=${encodeURIComponent(text)}`).catch(() => {});
-            }}
+            label="Draft reminder"
+            tone={colors.emerald}
+            disabled={!data.oldestOpen}
+            onPress={() => router.push({ pathname: "/reminder/[customerId]", params: { customerId: customer.id } })}
           />
           <GhostButton label="Call" onPress={() => Linking.openURL(`tel:+91${customer.phone}`).catch(() => {})} />
           <GhostButton label={pausedUntil ? "AI paused" : "Pause AI"} tone={pausedUntil ? colors.emerald : colors.gold} onPress={() => pauseRef.current?.present()} />
@@ -233,6 +229,7 @@ export function ClientDetailScreen() {
         name={customer.name}
         outstanding={Number(customer.total_outstanding)}
         onSubmit={(input) => logInteraction({ customerId: customer.id, ...input })}
+        onTranscribe={transcribe}
       />
     </View>
   );

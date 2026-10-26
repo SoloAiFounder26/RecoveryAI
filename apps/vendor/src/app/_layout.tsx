@@ -45,10 +45,17 @@ function ShieldedStack() {
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="client/[id]" options={{ animation: "slide_from_right" }} />
             <Stack.Screen name="activity" options={{ animation: "slide_from_right" }} />
+            <Stack.Screen name="reminder/[customerId]" options={{ animation: "slide_from_right" }} />
+            <Stack.Screen name="analytics" options={{ animation: "slide_from_right" }} />
+            <Stack.Screen name="import" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
+            <Stack.Screen name="profile" options={{ animation: "slide_from_right" }} />
+            <Stack.Screen name="team" options={{ animation: "slide_from_right" }} />
+            <Stack.Screen name="help" options={{ animation: "slide_from_right" }} />
             <Stack.Screen name="add-invoice" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
           </Stack.Protected>
           <Stack.Protected guard={status === "signedOut"}>
             <Stack.Screen name="login" />
+            <Stack.Screen name="signup" options={{ animation: "slide_from_right" }} />
           </Stack.Protected>
         </Stack>
       </VendorDataProvider>

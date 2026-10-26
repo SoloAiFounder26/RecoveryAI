@@ -1,4 +1,5 @@
 import * as Haptics from "expo-haptics";
+import { Link } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRef, useState, type ReactNode } from "react";
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from "react-native";
@@ -148,6 +149,14 @@ export default function LoginScreen() {
         </Animated.View>
 
         {error && <Text className="mt-4 text-sm text-crimson">{error}</Text>}
+
+        <Link href="/signup" asChild>
+          <Pressable className="mt-5 self-start" accessibilityRole="link">
+            <Text className="text-sm text-mute">
+              New to RecoveryAI? <Text className="font-bold text-gold">Create an account</Text>
+            </Text>
+          </Pressable>
+        </Link>
 
         <View className="flex-1" />
 

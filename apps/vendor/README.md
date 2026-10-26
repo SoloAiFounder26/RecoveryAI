@@ -30,9 +30,10 @@ npx expo install expo-router expo-haptics expo-blur expo-linear-gradient expo-se
   expo-local-authentication expo-screen-capture expo-status-bar expo-font expo-constants expo-linking \
   react-native-reanimated react-native-worklets react-native-gesture-handler react-native-svg \
   react-native-safe-area-context react-native-screens @gorhom/bottom-sheet react-native-web react-dom
-npm i nativewind tailwindcss@^3.4 @supabase/supabase-js react-native-url-polyfill
+npx expo install expo-audio expo-asset expo-clipboard expo-document-picker expo-file-system
+npm i nativewind tailwindcss@^3.4 @supabase/supabase-js react-native-url-polyfill xlsx
 
-cp .env.example .env.local    # fill in the Supabase URL + publishable key
+cp .env.example .env.local    # Supabase URL + publishable key, EXPO_PUBLIC_WEB_API_URL (default https://app.zaravito.com)
 npm start                     # Expo Go / dev client
 npm run build:apk             # test APK via EAS (preview profile has a demo login)
 ```
@@ -52,6 +53,9 @@ apps/vendor/
     │   ├── login.tsx                # Supabase Auth: email + password, or email OTP
     │   ├── (tabs)/                  # Vault · Debtors · Dispatch · Account (frosted tab bar)
     │   ├── client/[id].tsx          # client detail
+    │   ├── signup.tsx               # new business / invited accountant, via /api/auth/signup
+    │   ├── reminder/[customerId].tsx  # reminder draft (tone, channel, language, UPI link, mark sent)
+    │   ├── analytics.tsx  import.tsx  profile.tsx  team.tsx  help.tsx
     │   ├── activity.tsx             # activity log
     │   └── add-invoice.tsx          # modal
     ├── screens/
@@ -61,6 +65,8 @@ apps/vendor/
     │   ├── DispatchHubScreen.tsx       # AI call queue + live call / reminder feed
     │   ├── AccountScreen.tsx           # plan + quotas, organisation, team, security
     │   ├── ActivityLogScreen.tsx       # timestamped log
+    │   ├── ReminderScreen.tsx  AnalyticsScreen.tsx  ImportScreen.tsx
+    │   ├── ProfileScreen.tsx  TeamScreen.tsx  HelpScreen.tsx
     │   └── AddInvoiceScreen.tsx
     ├── components/
     │   ├── BiometricShield.tsx  SwipeToRecoverSlider.tsx  DebtorCard.tsx
@@ -68,7 +74,8 @@ apps/vendor/
     │   ├── DsoGauge.tsx  GlassCard.tsx  RollingRupeeCounter.tsx  TabBar.tsx  ui.tsx  icons.tsx
     ├── data/VendorDataProvider.tsx  # one shared load, 30 s polling, write actions (+ sample-mode stand-ins)
     ├── data/mock.ts
-    ├── lib/                         # vendorApi, metrics, supabase, secureStorage, biometric, format
+    ├── lib/                         # vendorApi (Supabase), webApi (app.zaravito.com/api), metrics, analytics, drafts
+    │                                # plans / templates / cadence / interest / importParser: ported from the web app
     ├── theme/tokens.ts
     └── types/vendor.ts              # row types matching the live schema, plan limits/prices
 ```
@@ -92,6 +99,27 @@ Vendors only have SELECT policies, so writes go through `supabase/migrations/202
 `fn_vendor_pause_ai`, `fn_vendor_log_interaction` and `fn_vendor_add_invoice`. Each derives the tenant from the JWT,
 blocks viewers and suspended tenants, validates input, then calls the existing `fn_save_commitment` / `fn_add_invoice`.
 Until that migration is applied, those buttons show "This action needs a backend update that isn't live yet".
+
+## Features that call the web app's API
+
+The rest of the web app's features need the service role or Gemini, which live in the Next.js app
+(`SoloAiFounder26/recovery-ai`). `src/lib/webApi.ts` calls those routes with the signed-in user's Supabase
+access token as `Authorization: Bearer`, which the server accepts from recovery-ai PR #25 onward:
+
+| Feature | Route |
+| --- | --- |
+| Reminder drafts (friendly / professional / firm, WhatsApp / email, English / Hindi, UPI + NEFT, MSMED notice) | `POST /api/drafts` |
+| Mark a cadence reminder sent (Day 1 / 16 / 31 queue is built on device from `reminder_events`) | `POST /api/reminders` |
+| AI Conversation: voice note → outcome, amount, date, notes (Gemini) | `POST /api/voice-action` |
+| CSV / Excel bulk import (Tally, Zoho Books, generic) | `POST /api/import` |
+| Business profile: UPI, bank details, Udyam | `PATCH /api/tenant` |
+| Team seats: invite with code, remove | `GET/POST/DELETE /api/team` |
+| Help & support requests and replies | `GET/POST /api/support` |
+| Sign-up (new business or invite code) | `POST /api/auth/signup` |
+
+Plan gates (reminder cadence, UPI links, email tones, statutory notices, aging dashboard, bulk import, seats)
+come from `src/lib/plans.ts`, a copy of the web app's plan table; the server enforces the same rules.
+The demo login has no server session, so it runs all of these on sample data on the device.
 
 ## Gaps against the brief (backend, not built here)
 

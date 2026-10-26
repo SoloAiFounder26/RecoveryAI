@@ -24,7 +24,7 @@ export async function fetchDashboard(): Promise<DashboardSnapshot> {
 
   const tenantRes = await supabase
     .from("tenants")
-    .select("id, business_name, owner_phone, plan, upi_id, udyam_number, udyam_category, is_suspended, created_at")
+    .select("id, business_name, owner_phone, auth_user_id, plan, upi_id, bank_details, udyam_number, udyam_category, udyam_registered_on, is_suspended, created_at")
     .maybeSingle<TenantRow>();
   if (tenantRes.error) throw tenantRes.error;
   const tenant = tenantRes.data;
@@ -33,7 +33,7 @@ export async function fetchDashboard(): Promise<DashboardSnapshot> {
   const [customers, invoices, commitments, reminders, members, plan] = await Promise.all([
     supabase
       .from("customers")
-      .select("id, name, phone, category, total_outstanding, overdue_days, risk_level, ai_risk_score, ai_insight, broken_promises_count, active_promise_date")
+      .select("id, name, phone, email, category, total_outstanding, overdue_days, risk_level, ai_risk_score, ai_insight, broken_promises_count, active_promise_date")
       .order("total_outstanding", { ascending: false })
       .returns<CustomerRow[]>(),
     supabase.from("invoices").select("id, customer_id, invoice_no, amount, due_date, status, invoice_date, created_at").returns<InvoiceRow[]>(),

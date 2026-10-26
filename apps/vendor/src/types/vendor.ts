@@ -11,9 +11,14 @@ export interface TenantRow {
   business_name: string;
   owner_phone: string;
   plan: Plan;
+  /** The owner's login. Anyone else reading this row is a team seat. */
+  auth_user_id: string;
   upi_id: string | null;
+  /** Free-text NEFT details printed under reminders. */
+  bank_details: string | null;
   udyam_number: string | null;
   udyam_category: "micro" | "small" | "medium" | null;
+  udyam_registered_on: string | null;
   is_suspended: boolean;
   created_at: string;
 }
@@ -40,6 +45,7 @@ export interface CustomerRow {
   id: string;
   name: string;
   phone: string;
+  email: string | null;
   category: string | null;
   total_outstanding: number;
   overdue_days: number;

@@ -1,6 +1,7 @@
 import type { Session } from "@supabase/supabase-js";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
+import { signup as apiSignup, type SignupInput } from "@/lib/webApi";
 
 /**
  * loading   → reading the stored session from SecureStore
@@ -27,6 +28,8 @@ interface AuthContextValue {
   signInWithPassword: (email: string, password: string) => Promise<void>;
   sendEmailOtp: (email: string) => Promise<void>;
   verifyEmailOtp: (email: string, code: string) => Promise<void>;
+  /** Creates the account + business on the web app (POST /api/auth/signup), then signs in. */
+  signUp: (input: SignupInput) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -81,6 +84,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }, []);
 
+  const signUp = useCallback(async (input: SignupInput) => {
+    await apiSignup({ ...input, email: input.email.trim().toLowerCase() });
+    const { error } = await supabase.auth.signInWithPassword({ email: input.email.trim().toLowerCase(), password: input.password });
+    if (error) throw new Error("Account created. Sign in with your new email and password.");
+  }, []);
+
   const signOut = useCallback(async () => {
     if (isDemo) {
       setIsDemo(false);
@@ -100,9 +109,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signInWithPassword,
       sendEmailOtp,
       verifyEmailOtp,
+      signUp,
       signOut,
     }),
-    [status, session, isDemo, signInWithPassword, sendEmailOtp, verifyEmailOtp, signOut],
+    [status, session, isDemo, signInWithPassword, sendEmailOtp, verifyEmailOtp, signUp, signOut],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
