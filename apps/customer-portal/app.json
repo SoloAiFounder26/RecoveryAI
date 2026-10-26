@@ -1,0 +1,66 @@
+{
+  "expo": {
+    "name": "RecoveryAI Pay",
+    "slug": "recoveryai-customer-portal",
+    "scheme": "recoveryai-pay",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#08080A",
+    "ios": {
+      "bundleIdentifier": "ai.recovery.pay",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Unlock RecoveryAI Pay with Face ID to keep your account statements private.",
+        "LSApplicationQueriesSchemes": [
+          "upi",
+          "phonepe",
+          "paytmmp",
+          "tez",
+          "gpay"
+        ]
+      }
+    },
+    "android": {
+      "package": "ai.recovery.pay",
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-font",
+      "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Unlock RecoveryAI Pay with Face ID to keep your account statements private."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Attach a receipt or challan photo to your billing query."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b8fb9048-f37b-4d6e-b4ca-166f895c2b28"
+      }
+    },
+    "owner": "zaravito"
+  }
+}
