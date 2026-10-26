@@ -36,6 +36,14 @@
         {
           "faceIDPermission": "RecoveryAI uses Face ID to keep your receivables and debtor details private."
         }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "enableBackgroundPlayback": false
+        }
       ]
     ],
     "experiments": {

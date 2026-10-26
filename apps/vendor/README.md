@@ -44,31 +44,33 @@ Without `.env.local` the app runs in preview mode on sample data.
 ```
 apps/vendor/
 ├── app.json / eas.json        # bundle ids, Face ID string; preview APK profile with demo login
-├── tailwind.config.js         # obsidian #08080A · abyss #121217 · card #16161F · hairline #262636
+├── supabase/migrations/
+│   └── 20261026100000_vendor_app_rpcs.sql   # fn_vendor_* write RPCs (pause AI, log outcome, add invoice)
 └── src/
-    ├── app/                   # Expo Router routes only
-    │   ├── _layout.tsx        # providers, BiometricShield around the whole stack, route guards
-    │   ├── login.tsx          # Supabase Auth: email + password, or email OTP
-    │   └── index.tsx          # → VendorDashboardScreen
+    ├── app/                         # Expo Router routes only
+    │   ├── _layout.tsx              # providers, BiometricShield, VendorDataProvider, route guards
+    │   ├── login.tsx                # Supabase Auth: email + password, or email OTP
+    │   ├── (tabs)/                  # Vault · Debtors · Dispatch · Account (frosted tab bar)
+    │   ├── client/[id].tsx          # client detail
+    │   ├── activity.tsx             # activity log
+    │   └── add-invoice.tsx          # modal
     ├── screens/
-    │   └── VendorDashboardScreen.tsx   # Command Vault
+    │   ├── VendorDashboardScreen.tsx   # Command Vault
+    │   ├── DebtorsScreen.tsx           # invoice matrix by aging bucket + clients view
+    │   ├── ClientDetailScreen.tsx      # ledger, pay score, transcripts, recordings, overrides
+    │   ├── DispatchHubScreen.tsx       # AI call queue + live call / reminder feed
+    │   ├── AccountScreen.tsx           # plan + quotas, organisation, team, security
+    │   ├── ActivityLogScreen.tsx       # timestamped log
+    │   └── AddInvoiceScreen.tsx
     ├── components/
-    │   ├── BiometricShield.tsx         # Face ID on every open, blur on minimise, no screenshots
-    │   ├── SwipeToRecoverSlider.tsx    # swipe-to-trigger AI recovery call
-    │   ├── DebtorCard.tsx              # aging tag, overdue bar, expandable actions
-    │   ├── DsoGauge.tsx                # DSO half-ring with the 45-day MSME line
-    │   ├── GlassCard.tsx               # frosted card + metallic hairline
-    │   └── RollingRupeeCounter.tsx     # odometer ₹ counter
-    ├── hooks/useVendorDashboard.ts
-    ├── lib/
-    │   ├── vendorApi.ts       # RLS-scoped reads + fn_recovery_plan + AI-call request
-    │   ├── metrics.ts         # aging buckets, DSO, recovered-this-month (pure, testable)
-    │   ├── supabase.ts / secureStorage.ts   # session in Keychain / Keystore, never AsyncStorage
-    │   ├── biometric.ts       # expo-local-authentication wrapper
-    │   └── format.ts          # ₹ Indian grouping (₹14,25,000), local-date helpers
-    ├── data/mock.ts           # sample book for previews / demo login
+    │   ├── BiometricShield.tsx  SwipeToRecoverSlider.tsx  DebtorCard.tsx
+    │   ├── ClientSheets.tsx (pause AI / log outcome)  CallRecordingPlayer.tsx  Sheet.tsx
+    │   ├── DsoGauge.tsx  GlassCard.tsx  RollingRupeeCounter.tsx  TabBar.tsx  ui.tsx  icons.tsx
+    ├── data/VendorDataProvider.tsx  # one shared load, 30 s polling, write actions (+ sample-mode stand-ins)
+    ├── data/mock.ts
+    ├── lib/                         # vendorApi, metrics, supabase, secureStorage, biometric, format
     ├── theme/tokens.ts
-    └── types/vendor.ts        # row types matching the live schema
+    └── types/vendor.ts              # row types matching the live schema, plan limits/prices
 ```
 
 ## How the numbers are derived
@@ -84,12 +86,20 @@ apps/vendor/
 | Needs action now | `fn_recovery_plan(tenant_id)` |
 | "AI paused" tag | `customers.active_promise_date` after today (the plan skips them) |
 
+## Writes
+
+Vendors only have SELECT policies, so writes go through `supabase/migrations/20261026100000_vendor_app_rpcs.sql`:
+`fn_vendor_pause_ai`, `fn_vendor_log_interaction` and `fn_vendor_add_invoice`. Each derives the tenant from the JWT,
+blocks viewers and suspended tenants, validates input, then calls the existing `fn_save_commitment` / `fn_add_invoice`.
+Until that migration is applied, those buttons show "This action needs a backend update that isn't live yet".
+
 ## Gaps against the brief (backend, not built here)
 
 - No `call_logs` table and no call-dispatch Edge Function. The swipe calls an Edge Function
   named `ai-recovery-call`; until it exists the slider reports "AI dialer isn't connected yet".
 - No GSTIN column on `customers`, so search covers name, invoice number and mobile.
-- Plans in the DB are `free / pro / growth`, not Free / Starter / Pro.
+- Plans in the DB are `free / pro / growth` (₹0 / ₹499 / ₹1,499), not Free / Starter / Pro.
 - Audit log is `admin_audit_log`, readable by platform admins only, not by vendors.
-- Vendors have read-only RLS; writes (pause AI calls, add invoices) go through
-  service-role functions that the web app's server calls.
+- No call-minute or WhatsApp-credit metering exists, so quotas show invoice usage (the only enforced limit) and counts.
+- No realtime publication; the dispatch hub polls every 30 s.
+- A login maps to one tenant (fn_my_tenant_id), so the tenant switcher has nothing to switch to.

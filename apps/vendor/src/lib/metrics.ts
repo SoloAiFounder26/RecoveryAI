@@ -52,11 +52,15 @@ export interface DashboardMetrics {
   callOutcomesThisMonth: number;
   promisesThisMonth: number;
   whatsappRemindersThisMonth: number;
+  /** Counted against the plan's monthly invoice limit. */
+  invoicesThisMonth: number;
   rows: DebtorInvoice[];
 }
 
 export function computeMetrics(s: DashboardSnapshot, today = startOfToday()): DashboardMetrics {
   const customersById = new Map(s.customers.map((c) => [c.id, c]));
+  const monthStart = startOfMonth(today);
+  const thisMonth = s.commitments.filter((c) => new Date(c.created_at) >= monthStart);
   const open = s.invoices.filter(isOpen);
 
   const aging: Record<AgingBucket, number> = { "0-30": 0, "31-60": 0, "61-90": 0, "90+": 0 };
@@ -87,10 +91,11 @@ export function computeMetrics(s: DashboardSnapshot, today = startOfToday()): Da
     aging,
     dso,
     avgDaysOverdue: pending > 0 ? Math.round(weightedDays / pending) : 0,
-    recoveredThisMonth: recovered(s.commitmentsThisMonth),
-    callOutcomesThisMonth: s.commitmentsThisMonth.length,
-    promisesThisMonth: s.commitmentsThisMonth.filter((c) => c.interaction_type === "Promise to Pay").length,
-    whatsappRemindersThisMonth: s.whatsappRemindersThisMonth,
+    recoveredThisMonth: recovered(thisMonth),
+    callOutcomesThisMonth: thisMonth.length,
+    promisesThisMonth: thisMonth.filter((c) => c.interaction_type === "Promise to Pay").length,
+    whatsappRemindersThisMonth: s.reminders.filter((r) => r.channel === "whatsapp" && new Date(r.created_at) >= monthStart).length,
+    invoicesThisMonth: invoicesCreatedThisMonth(s.invoices),
     rows,
   };
 }
@@ -104,4 +109,56 @@ function recovered(commitments: CommitmentRow[]) {
 
 export function startOfMonth(today = startOfToday()) {
   return new Date(today.getFullYear(), today.getMonth(), 1);
+}
+
+/**
+ * Invoices entered this calendar month in India time: the same count fn_tenant_invoice_usage
+ * checks against the plan limit.
+ */
+export function invoicesCreatedThisMonth(invoices: InvoiceRow[], now = new Date()) {
+  const ist = (d: Date) => new Date(d.getTime() + 330 * 60_000);
+  const n = ist(now);
+  return invoices.filter((i) => {
+    const c = ist(new Date(i.created_at));
+    return c.getUTCFullYear() === n.getUTCFullYear() && c.getUTCMonth() === n.getUTCMonth();
+  }).length;
+}
+
+export type Sentiment = "positive" | "neutral" | "negative";
+
+/** How a call went, read from what the debtor committed to. */
+export function sentimentOf(c: CommitmentRow): Sentiment {
+  if (c.interaction_type === "Paid" || c.interaction_type === "Partial Payment") return "positive";
+  if (c.interaction_type === "Promise to Pay") return c.status === "broken" ? "negative" : "positive";
+  if (c.interaction_type === "Dispute" || c.interaction_type === "No Response") return "negative";
+  return "neutral";
+}
+
+export interface PaymentBehaviour {
+  /** 0-100, higher is better. */
+  score: number;
+  kept: number;
+  broken: number;
+  pending: number;
+  /** Share of resolved promises that were kept, or null with none resolved yet. */
+  reliability: number | null;
+}
+
+/**
+ * Payment behaviour score for one debtor: starts from the inverse of the backend's AI risk
+ * score and moves with their promise record (kept +5 each, broken -10 each).
+ */
+export function paymentBehaviour(customer: CustomerRow, commitments: CommitmentRow[]): PaymentBehaviour {
+  const mine = commitments.filter((c) => c.customer_id === customer.id && c.interaction_type === "Promise to Pay");
+  const kept = mine.filter((c) => c.status === "kept").length;
+  const broken = Math.max(mine.filter((c) => c.status === "broken").length, customer.broken_promises_count);
+  const pending = mine.filter((c) => c.status === "pending").length;
+  const raw = 100 - customer.ai_risk_score + kept * 5 - broken * 10;
+  return {
+    score: Math.max(0, Math.min(100, Math.round(raw))),
+    kept,
+    broken,
+    pending,
+    reliability: kept + broken > 0 ? kept / (kept + broken) : null,
+  };
 }

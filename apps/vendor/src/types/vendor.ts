@@ -9,9 +9,31 @@ export type InteractionType = "Promise to Pay" | "Partial Payment" | "Dispute" |
 export interface TenantRow {
   id: string;
   business_name: string;
+  owner_phone: string;
   plan: Plan;
   upi_id: string | null;
+  udyam_number: string | null;
+  udyam_category: "micro" | "small" | "medium" | null;
   is_suspended: boolean;
+  created_at: string;
+}
+
+export interface TenantMemberRow {
+  id: string;
+  email: string;
+  role: "member" | "viewer";
+  status: "invited" | "active";
+  invited_at: string;
+}
+
+/** One automated reminder sent for an invoice (stage 1-3 of the chain). */
+export interface ReminderEventRow {
+  id: string;
+  invoice_id: string;
+  stage: 1 | 2 | 3;
+  channel: "whatsapp" | "email";
+  created_by: string | null;
+  created_at: string;
 }
 
 export interface CustomerRow {
@@ -45,7 +67,10 @@ export interface CommitmentRow {
   interaction_type: InteractionType;
   promised_amount: number | null;
   promised_date: string | null;
+  /** Call summary / transcript written by the AI agent or the vendor. */
+  notes: string | null;
   status: "pending" | "kept" | "broken";
+  /** Call recording, when the dialer stored one. */
   audio_url: string | null;
   created_at: string;
 }
@@ -66,14 +91,23 @@ export interface RecoveryPlanRow {
   priority_rank: number;
 }
 
+/** How far back the app loads commitments and reminders. */
+export const HISTORY_DAYS = 180;
+
 export interface DashboardSnapshot {
   tenant: TenantRow | null;
   customers: CustomerRow[];
   invoices: InvoiceRow[];
-  /** Commitments logged since the 1st of this month. */
-  commitmentsThisMonth: CommitmentRow[];
-  /** `reminder_events` rows with channel = 'whatsapp' since the 1st of this month. */
-  whatsappRemindersThisMonth: number;
+  /** Call outcomes / promises, newest first, last HISTORY_DAYS days. */
+  commitments: CommitmentRow[];
+  /** Reminder chain events, newest first, last HISTORY_DAYS days. */
+  reminders: ReminderEventRow[];
+  members: TenantMemberRow[];
   recoveryPlan: RecoveryPlanRow[];
   fetchedAt: string;
 }
+
+/** Monthly invoice allowance per plan (mirrors fn_plan_invoice_limit). null = unlimited. */
+export const PLAN_INVOICE_LIMIT: Record<Plan, number | null> = { free: 3, pro: 15, growth: null };
+export const PLAN_PRICE: Record<Plan, number> = { free: 0, pro: 499, growth: 1499 };
+export const PLAN_LABEL: Record<Plan, string> = { free: "Free", pro: "Pro", growth: "Growth" };

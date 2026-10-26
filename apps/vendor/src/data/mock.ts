@@ -1,5 +1,5 @@
 import { addDays, startOfToday, toISODate } from "@/lib/format";
-import type { CommitmentRow, CustomerRow, DashboardSnapshot, InvoiceRow, RecoveryPlanRow } from "@/types/vendor";
+import type { CommitmentRow, CustomerRow, DashboardSnapshot, InvoiceRow, RecoveryPlanRow, ReminderEventRow, TenantMemberRow } from "@/types/vendor";
 
 // Sample book for previews and the test-build demo login. Shaped exactly like the live rows.
 
@@ -39,15 +39,68 @@ const invoices: InvoiceRow[] = [
   inv("i16", "c1", "GKE/25-26/0305", 295000, 10, -20, "Paid"),
 ];
 
-const commitment = (id: string, customer_id: string, interaction_type: CommitmentRow["interaction_type"], amount: number, daysAgo: number): CommitmentRow => ({
-  id, customer_id, interaction_type, promised_amount: amount, promised_date: d(-daysAgo), status: "kept", audio_url: null, created_at: `${d(-Math.min(daysAgo, today.getDate() - 1))}T09:30:00Z`,
+const at = (daysAgo: number, time = "09:30:00") => `${d(-daysAgo)}T${time}+05:30`;
+
+const commitment = (
+  id: string,
+  customer_id: string,
+  interaction_type: CommitmentRow["interaction_type"],
+  amount: number | null,
+  daysAgo: number,
+  notes: string,
+  status: CommitmentRow["status"] = "kept",
+  promisedInDays: number | null = null,
+): CommitmentRow => ({
+  id,
+  customer_id,
+  interaction_type,
+  promised_amount: amount,
+  promised_date: promisedInDays === null ? null : d(promisedInDays),
+  notes,
+  status,
+  audio_url: null,
+  created_at: at(daysAgo, "11:15:00"),
 });
 
-const commitmentsThisMonth: CommitmentRow[] = [
-  commitment("m1", "c3", "Partial Payment", 85000, 9),
-  commitment("m2", "c5", "Paid", 64000, 6),
-  commitment("m3", "c2", "Promise to Pay", 212000, 2),
-  commitment("m4", "c1", "Paid", 175000, 4),
+// Newest first, like the live query.
+const commitments: CommitmentRow[] = [
+  commitment("m9", "c2", "Promise to Pay", 212000, 0, "Owner ne bola aaj shaam tak transfer kar denge. Calm tone, confirmed the amount.", "pending", 0),
+  commitment("m8", "c3", "Promise to Pay", 98400, 1, "Accounts team ne bataya 1 Nov ko cheque clear hoga. Asked for a fresh statement.", "pending", 6),
+  commitment("m7", "c4", "Dispute", null, 2, "Says invoice 0177 had 6 damaged cartons; wants a credit note before paying the rest. Irritated.", "pending"),
+  commitment("m6", "c1", "No Response", null, 3, "Called twice at 11:00 and 18:30, no answer. WhatsApp delivered, not read.", "pending"),
+  commitment("m4", "c1", "Paid", 175000, 4, "Received ₹1,75,000 by NEFT against 0120.", "kept"),
+  commitment("m2", "c5", "Paid", 64000, 6, "Paid in full by UPI after the second reminder.", "kept"),
+  commitment("m1", "c3", "Partial Payment", 85000, 9, "Part payment ₹85,000 received; balance promised next week.", "kept"),
+  commitment("m0", "c4", "Promise to Pay", 342750, 21, "Sir ne kaha tha 5 din pehle payment kar denge, abhi tak nahi aaya.", "broken", -16),
+  commitment("mA", "c1", "Promise to Pay", 200000, 38, "Promised after Diwali stock clearance.", "broken", -30),
+  commitment("mB", "c5", "Promise to Pay", 64000, 45, "Will pay by month end.", "kept", -40),
+];
+
+const reminder = (id: string, invoice_id: string, stage: 1 | 2 | 3, channel: "whatsapp" | "email", daysAgo: number, time: string): ReminderEventRow => ({
+  id,
+  invoice_id,
+  stage,
+  channel,
+  created_by: null,
+  created_at: at(daysAgo, time),
+});
+
+const reminders: ReminderEventRow[] = [
+  reminder("r12", "i1", 3, "whatsapp", 0, "10:05:00"),
+  reminder("r11", "i6", 3, "whatsapp", 0, "10:04:00"),
+  reminder("r10", "i3", 2, "whatsapp", 1, "10:02:00"),
+  reminder("r9", "i4", 2, "email", 1, "10:01:00"),
+  reminder("r8", "i7", 1, "whatsapp", 2, "10:00:00"),
+  reminder("r7", "i5", 1, "whatsapp", 3, "10:00:00"),
+  reminder("r6", "i2", 3, "email", 4, "10:00:00"),
+  reminder("r5", "i2", 2, "whatsapp", 9, "10:00:00"),
+  reminder("r4", "i3", 1, "whatsapp", 12, "10:00:00"),
+  reminder("r3", "i1", 2, "whatsapp", 15, "10:00:00"),
+];
+
+const members: TenantMemberRow[] = [
+  { id: "tm1", email: "accounts@gke.in", role: "member", status: "active", invited_at: at(60) },
+  { id: "tm2", email: "ca.sharma@gmail.com", role: "viewer", status: "invited", invited_at: at(3) },
 ];
 
 const recoveryPlan: RecoveryPlanRow[] = customers
@@ -60,11 +113,22 @@ const recoveryPlan: RecoveryPlanRow[] = customers
   .sort((a, b) => a.priority_rank - b.priority_rank || b.total_outstanding - a.total_outstanding);
 
 export const mockSnapshot: DashboardSnapshot = {
-  tenant: { id: "t-demo", business_name: "Ganesh & Kartike Electronics", plan: "pro", upi_id: "gke@okicici", is_suspended: false },
+  tenant: {
+    id: "t-demo",
+    business_name: "Ganesh & Kartike Electronics",
+    owner_phone: "9810012345",
+    plan: "pro",
+    upi_id: "gke@okicici",
+    udyam_number: "UDYAM-DL-06-0012345",
+    udyam_category: "small",
+    is_suspended: false,
+    created_at: at(200),
+  },
   customers,
   invoices,
-  commitmentsThisMonth,
-  whatsappRemindersThisMonth: 47,
+  commitments,
+  reminders,
+  members,
   recoveryPlan,
   fetchedAt: new Date().toISOString(),
 };
