@@ -15,7 +15,7 @@ type Channel = "sms" | "whatsapp";
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
-  const { sendOtp, verifyOtp } = useAuth();
+  const { sendOtp, verifyOtp, demo } = useAuth();
   const [step, setStep] = useState<"phone" | "code">("phone");
   const [phoneInput, setPhoneInput] = useState("");
   const [channel, setChannel] = useState<Channel>("sms");
@@ -213,6 +213,11 @@ export default function LoginScreen() {
         <Text className="mt-4 text-center text-[11px] leading-4 text-faint">
           You will only see invoices raised to this number.{"\n"}Your session is stored encrypted on this device.
         </Text>
+        {demo && (
+          <Text className="mt-2 text-center font-mono text-[10px] text-gold">
+            TEST BUILD · {formatMobile(demo.phone)} · CODE {demo.code}
+          </Text>
+        )}
       </View>
     </KeyboardAvoidingView>
   );

@@ -14,6 +14,13 @@ import { isSupabaseConfigured, supabase } from "@/lib/supabase";
  */
 export type AuthStatus = "loading" | "signedOut" | "offerBiometric" | "locked" | "ready";
 
+// Testing only: "<10-digit mobile>:<code>" logs in without SMS and shows sample data.
+// Set in eas.json's preview profile; never set it for production builds.
+const DEMO = (() => {
+  const [phone, code] = (process.env.EXPO_PUBLIC_DEMO_LOGIN ?? "").split(":");
+  return phone && code ? { phone, code } : null;
+})();
+
 // Re-lock if the app was in the background longer than this.
 const RELOCK_AFTER_MS = 60_000;
 
@@ -22,6 +29,10 @@ interface AuthContextValue {
   session: Session | null;
   biometricKind: BiometricKind | null;
   isPreview: boolean;
+  /** True when the vault should show sample data (no Supabase, or demo login). */
+  useMockData: boolean;
+  /** The test number and code, if this build has demo login enabled. */
+  demo: { phone: string; code: string } | null;
   sendOtp: (tenDigit: string, channel: "sms" | "whatsapp") => Promise<void>;
   verifyOtp: (tenDigit: string, code: string) => Promise<void>;
   unlock: () => Promise<boolean>;
@@ -35,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>(isSupabaseConfigured ? "loading" : "ready");
   const [session, setSession] = useState<Session | null>(null);
   const [biometricKind, setBiometricKind] = useState<BiometricKind | null>(null);
+  const [isDemo, setIsDemo] = useState(false);
   const backgroundedAt = useRef<number | null>(null);
   const justSignedIn = useRef(false);
 
@@ -79,11 +91,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session]);
 
   const sendOtp = useCallback(async (tenDigit: string, channel: "sms" | "whatsapp") => {
+    if (DEMO && tenDigit === DEMO.phone) return;
     const { error } = await supabase.auth.signInWithOtp({ phone: toE164(tenDigit), options: { channel } });
     if (error) throw error;
   }, []);
 
   const verifyOtp = useCallback(async (tenDigit: string, code: string) => {
+    if (DEMO && tenDigit === DEMO.phone) {
+      if (code !== DEMO.code) throw new Error("Invalid code");
+      setIsDemo(true);
+      setStatus("ready");
+      return;
+    }
     justSignedIn.current = true;
     const { error } = await supabase.auth.verifyOtp({ phone: toE164(tenDigit), token: code, type: "sms" });
     if (error) {
@@ -105,13 +124,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    if (isDemo) {
+      setIsDemo(false);
+      setStatus("signedOut");
+      return;
+    }
     await setBiometricPref(null);
     if (isSupabaseConfigured) await supabase.auth.signOut();
-  }, []);
+  }, [isDemo]);
 
   const value = useMemo(
-    () => ({ status, session, biometricKind, isPreview: !isSupabaseConfigured, sendOtp, verifyOtp, unlock, answerBiometricOffer, signOut }),
-    [status, session, biometricKind, sendOtp, verifyOtp, unlock, answerBiometricOffer, signOut],
+    () => ({
+      status,
+      session,
+      biometricKind,
+      isPreview: !isSupabaseConfigured,
+      useMockData: !isSupabaseConfigured || isDemo,
+      demo: DEMO,
+      sendOtp,
+      verifyOtp,
+      unlock,
+      answerBiometricOffer,
+      signOut,
+    }),
+    [status, session, biometricKind, isDemo, sendOtp, verifyOtp, unlock, answerBiometricOffer, signOut],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

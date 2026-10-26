@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { mockAccounts, mockCommitments, mockInvoices } from "@/data/mock";
 import { fetchAccounts, fetchCommitments, fetchInvoices } from "@/lib/portalApi";
-import { isSupabaseConfigured } from "@/lib/supabase";
+import { useAuth } from "@/auth/AuthProvider";
 import type { PortalAccount, PortalCommitment, PortalInvoice } from "@/types/portal";
 
 export interface PortalData {
@@ -21,6 +21,7 @@ export interface PortalData {
 }
 
 export function usePortalData(): PortalData {
+  const { useMockData } = useAuth();
   const [accounts, setAccounts] = useState<PortalAccount[]>([]);
   const [invoices, setInvoices] = useState<PortalInvoice[]>([]);
   const [commitments, setCommitments] = useState<PortalCommitment[]>([]);
@@ -31,7 +32,7 @@ export function usePortalData(): PortalData {
     setLoading(true);
     setError(null);
     try {
-      if (!isSupabaseConfigured) {
+      if (useMockData) {
         setAccounts(mockAccounts);
         setInvoices(mockInvoices);
         setCommitments(mockCommitments);
@@ -46,7 +47,7 @@ export function usePortalData(): PortalData {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [useMockData]);
 
   useEffect(() => {
     refresh();
@@ -66,5 +67,5 @@ export function usePortalData(): PortalData {
     };
   }, [accounts, invoices, commitments]);
 
-  return { accounts, invoices, commitments, ...derived, loading, error, isMock: !isSupabaseConfigured, refresh };
+  return { accounts, invoices, commitments, ...derived, loading, error, isMock: useMockData, refresh };
 }

@@ -105,7 +105,7 @@ export function CustomerDashboard({ onOpenInvoice }: Props) {
 
         {data.isMock && (
           <Text className="mx-5 mt-3 rounded-xl border border-line bg-surface px-3 py-2 font-mono text-[10px] text-faint">
-            PREVIEW DATA · set EXPO_PUBLIC_SUPABASE_URL to load your real account
+            {auth.isPreview ? "PREVIEW DATA · set EXPO_PUBLIC_SUPABASE_URL to load your real account" : "TEST LOGIN · sample data, not your real account"}
           </Text>
         )}
         {data.error && <Text className="mx-5 mt-3 text-sm text-crimson">{data.error}</Text>}

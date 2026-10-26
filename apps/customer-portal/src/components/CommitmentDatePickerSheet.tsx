@@ -22,7 +22,7 @@ import {
   toISODate,
 } from "@/lib/format";
 import { submitCommitment } from "@/lib/portalApi";
-import { isSupabaseConfigured } from "@/lib/supabase";
+import { useAuth } from "@/auth/AuthProvider";
 import { colors } from "@/theme/tokens";
 import type { CommitmentResult, PortalAccount } from "@/types/portal";
 
@@ -56,6 +56,7 @@ export const CommitmentDatePickerSheet = forwardRef<CommitmentDatePickerSheetRef
   ref,
 ) {
   const sheet = useRef<BottomSheetModal>(null);
+  const { useMockData } = useAuth();
   const [account, setAccount] = useState<PortalAccount | null>(null);
   const [dayOffset, setDayOffset] = useState(7);
   const [mode, setMode] = useState<Mode>("full");
@@ -89,7 +90,7 @@ export const CommitmentDatePickerSheet = forwardRef<CommitmentDatePickerSheetRef
     setState("saving");
     setError(null);
     try {
-      const result = isSupabaseConfigured
+      const result = !useMockData
         ? await submitCommitment({
             customerId: account.customer_id,
             promisedDate: toISODate(date),
