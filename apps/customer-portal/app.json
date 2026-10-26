@@ -25,8 +25,9 @@
       "package": "ai.recovery.pay",
       "edgeToEdgeEnabled": true,
       "permissions": [
-        "USE_BIOMETRIC",
-        "USE_FINGERPRINT"
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -53,6 +54,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b8fb9048-f37b-4d6e-b4ca-166f895c2b28"
+      }
+    },
+    "owner": "zaravito"
   }
 }
