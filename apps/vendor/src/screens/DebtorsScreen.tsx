@@ -94,7 +94,7 @@ export function DebtorsScreen() {
 
   const header = (
     <View style={{ paddingTop: insets.top + 8 }}>
-      <ScreenTitle eyebrow="Debtors & invoices" title={view === "invoices" ? `${invoiceCount} open invoices` : `${clients.length} clients`} />
+      <ScreenTitle eyebrow="Customers & invoices" title={view === "invoices" ? `${invoiceCount} open invoices` : `${clients.length} clients`} />
 
       <View className="mt-4 flex-row rounded-full border border-line bg-surface p-1">
         {(["invoices", "clients"] as const).map((v) => (

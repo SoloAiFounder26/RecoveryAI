@@ -89,7 +89,7 @@ export function ImportScreen() {
   return (
     <View className="flex-1 bg-obsidian">
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: insets.top + 8, paddingBottom: insets.bottom + 32 }}>
-        <BackHeader eyebrow="Bulk upload" title="Import debtors" close />
+        <BackHeader eyebrow="Bulk upload" title="Import customers" close />
 
         {locked ? (
           <Notice>CSV / Excel bulk upload is available on the Solo Pro plan. Contact us to upgrade.</Notice>
@@ -114,7 +114,7 @@ export function ImportScreen() {
                   {done.insertedInvoices} invoices for {done.insertedCustomers} debtors · {formatINR(done.totalOutstanding)} outstanding added.
                 </Text>
                 <View className="mt-4 flex-row">
-                  <GhostButton label="Back to vault" tone={colors.emerald} onPress={() => router.back()} />
+                  <GhostButton label="Back to home" tone={colors.emerald} onPress={() => router.back()} />
                 </View>
               </GlassCard>
             )}

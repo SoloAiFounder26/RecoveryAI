@@ -61,7 +61,7 @@ export function AccountScreen() {
   return (
     <View className="flex-1 bg-obsidian">
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: insets.top + 8, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}>
-        <ScreenTitle eyebrow="Account" title={tenant.business_name} />
+        <ScreenTitle eyebrow="Settings" title={tenant.business_name} />
 
         {/* Tier overview */}
         <GlassCard glow={colors.emerald} style={{ marginTop: 20 }} className="p-5">

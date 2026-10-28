@@ -69,14 +69,14 @@ export function VendorDashboardScreen() {
         {/* Top bar */}
         <Animated.View entering={FadeInDown.duration(400)} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
           <View className="flex-1 pr-3">
-            <Text className="font-mono text-[10px] uppercase tracking-label text-faint">Command Vault</Text>
+            <Text className="font-mono text-[10px] uppercase tracking-label text-faint">Home</Text>
             <Text numberOfLines={1} className="mt-1 text-[20px] font-extrabold text-ink">
               {snapshot.tenant?.business_name}
             </Text>
           </View>
           <Pressable
             onPress={() => router.navigate("/account")}
-            accessibilityLabel="Plan and account"
+            accessibilityLabel="Plan and settings"
             className="rounded-full border border-emerald/40 bg-emerald/10 px-3 py-1"
           >
             <Text className="font-mono text-[10px] uppercase tracking-label text-emerald">{snapshot.tenant ? PLAN_LABEL[snapshot.tenant.plan] : "—"}</Text>
@@ -168,7 +168,7 @@ export function VendorDashboardScreen() {
           />
         ))}
         <View className="flex-row">
-          <GhostButton label="See all debtors & invoices" onPress={() => router.navigate("/debtors")} />
+          <GhostButton label="See all customers & invoices" onPress={() => router.navigate("/debtors")} />
         </View>
       </ScrollView>
     </View>

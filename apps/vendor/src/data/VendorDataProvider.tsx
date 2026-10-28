@@ -417,7 +417,7 @@ const MOCK_SUPPORT: web.SupportRequest[] = [
     support_replies: [
       {
         id: "srr-demo-1",
-        message: "Open Account → Business profile, edit the UPI ID and save. New drafts pick it up straight away.",
+        message: "Open Settings → Business profile, edit the UPI ID and save. New drafts pick it up straight away.",
         created_at: new Date(Date.now() - 2 * 86_400_000 + 60_000).toISOString(),
         is_ai: true,
       },

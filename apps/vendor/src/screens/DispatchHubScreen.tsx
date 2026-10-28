@@ -98,7 +98,7 @@ export function DispatchHubScreen() {
 
   const header = (
     <View style={{ paddingTop: insets.top + 8 }}>
-      <ScreenTitle eyebrow="Recovery dispatch" title="Live hub" right={<LiveBadge fetchedAt={snapshot.fetchedAt} sample={isSample} stale={Boolean(error)} />} />
+      <ScreenTitle eyebrow="Calls & reminders" title="Reminders" right={<LiveBadge fetchedAt={snapshot.fetchedAt} sample={isSample} stale={Boolean(error)} />} />
 
       <View className="mt-5 flex-row gap-2">
         <Counter label="Calls today" value={`${feed.today.calls}`} tone={colors.ink} />

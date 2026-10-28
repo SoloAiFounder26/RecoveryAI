@@ -91,9 +91,9 @@ export function AddInvoiceScreen() {
           </Text>
         </View>
 
-        <Label>Debtor</Label>
+        <Label>Customer</Label>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-5" contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}>
-          <Chip label="+ New debtor" active={customerId === null} onPress={() => pick(null)} tone={colors.gold} />
+          <Chip label="+ New customer" active={customerId === null} onPress={() => pick(null)} tone={colors.gold} />
           {topDebtors.map((c) => (
             <Chip key={c.id} label={c.name} active={customerId === c.id} onPress={() => pick(c.id)} />
           ))}

@@ -119,7 +119,7 @@ export function DataGate({ loading, error, onRetry }: { loading: boolean; error:
     return (
       <View className="flex-1 items-center justify-center bg-obsidian">
         <ActivityIndicator color={colors.mute} />
-        <Text className="mt-3 font-mono text-[11px] uppercase tracking-label text-faint">Opening vault</Text>
+        <Text className="mt-3 font-mono text-[11px] uppercase tracking-label text-faint">Loading</Text>
       </View>
     );
   }

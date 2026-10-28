@@ -51,7 +51,7 @@ apps/vendor/
     ├── app/                         # Expo Router routes only
     │   ├── _layout.tsx              # providers, BiometricShield, VendorDataProvider, route guards
     │   ├── login.tsx                # Supabase Auth: email + password, or email OTP
-    │   ├── (tabs)/                  # Vault · Debtors · Dispatch · Account (frosted tab bar)
+    │   ├── (tabs)/                  # Home · Customers · Reminders · Settings (frosted tab bar)
     │   ├── client/[id].tsx          # client detail
     │   ├── signup.tsx               # new business / invited accountant, via /api/auth/signup
     │   ├── reminder/[customerId].tsx  # reminder draft (tone, channel, language, UPI link, mark sent)
